@@ -1,0 +1,18 @@
+# Pliki robocze edytorów
+*.swp
+*.swo
+*~
+
+# Rozpakowany lab — instaluje się do /opt/lab, w repo niepotrzebny
+lab/
+
+# Środowiska Pythona i cache — powstają przy pracy z aplikacją
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Lokalna konfiguracja i baza — u każdego inna, nie wersjonujemy
+.env
+*.db

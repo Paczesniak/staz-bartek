@@ -1,0 +1,28 @@
+# Ten front nie ma kroku budowania ani zależności — commitujemy wszystkie cztery
+# pliki źródłowe razem z config.js. Poniżej wyłącznie śmieci, które lubią się tu
+# zaplątać z systemu, edytora albo z lokalnych eksperymentów.
+
+# System operacyjny
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Edytory
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Gdyby ktoś jednak odpalił tu npm-a
+node_modules/
+package-lock.json
+
+# Sekrety — w tym katalogu nie mają czego szukać, ale lepiej mieć wpis niż wpadkę
+.env
+.env.*
+
+# Lokalne wersje robocze i logi
+*.log
+*.local.js
+config.local.js

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skracacz linków — panel</title>
+  <!-- Ikona jako data URI: żadnego pliku do pobrania, żadnego 404 w konsoli. -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='rgb(37,99,235)'/><path d='M12.5 19.5 L19.5 12.5' stroke='white' stroke-width='3' stroke-linecap='round'/><circle cx='9.5' cy='22.5' r='4.5' fill='none' stroke='white' stroke-width='3'/><circle cx='22.5' cy='9.5' r='4.5' fill='none' stroke='white' stroke-width='3'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── Pasek stanu API ─────────────────────────────────────────────
+       Odpytuje /health przy starcie i co 15 sekund. Rozróżnia trzy stany:
+       API działa · API odpowiada, ale baza nie · API nieosiągalne. -->
+  <div id="pasek-stanu" class="pasek-stanu pasek-stanu--sprawdzanie" role="status" aria-live="polite">
+    <div class="pasek-stanu__tresc">
+      <span class="pasek-stanu__kropka" aria-hidden="true"></span>
+      <span class="pasek-stanu__etykieta" id="stan-etykieta">Sprawdzam stan API…</span>
+      <span class="pasek-stanu__opis" id="stan-opis"></span>
+      <span class="pasek-stanu__czas" id="stan-czas"></span>
+      <button type="button" class="przycisk przycisk--cichy pasek-stanu__odswiez" id="stan-odswiez">
+        Sprawdź teraz
+      </button>
+    </div>
+  </div>
+
+  <main class="strona">
+
+    <header class="naglowek">
+      <h1 class="naglowek__tytul">Skracacz linków</h1>
+      <p class="naglowek__opis">
+        Panel do zarządzania skróconymi adresami. Wszystkie dane pochodzą z API pod adresem
+        <code id="naglowek-adres-api">—</code>.
+      </p>
+    </header>
+
+    <noscript>
+      <div class="komunikat komunikat--blad" role="alert">
+        <p class="komunikat__tytul">JavaScript jest wyłączony</p>
+        <p class="komunikat__tresc">
+          Ta strona pobiera dane z API po stronie przeglądarki. Bez JavaScriptu nie zobaczysz niczego
+          poza tym komunikatem.
+        </p>
+      </div>
+    </noscript>
+
+    <!-- ── Formularz dodawania ────────────────────────────────────── -->
+    <section class="karta" aria-labelledby="tytul-formularza">
+      <h2 class="karta__tytul" id="tytul-formularza">Dodaj link</h2>
+
+      <form id="formularz" class="formularz" novalidate>
+        <div class="pole pole--szerokie">
+          <label class="pole__etykieta" for="pole-url">Adres do skrócenia</label>
+          <input
+            class="pole__wejscie"
+            id="pole-url"
+            name="url"
+            type="url"
+            inputmode="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="https://przyklad.pl/bardzo/dluga/sciezka"
+            aria-describedby="podpowiedz-url blad-url"
+            required>
+          <p class="pole__podpowiedz" id="podpowiedz-url">Pełny adres razem z <code>https://</code></p>
+          <p class="pole__blad" id="blad-url" hidden></p>
+        </div>
+
+        <div class="pole">
+          <label class="pole__etykieta" for="pole-kod">
+            Własny kod <span class="pole__opcjonalne">(opcjonalnie)</span>
+          </label>
+          <input
+            class="pole__wejscie pole__wejscie--mono"
+            id="pole-kod"
+            name="code"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="np. staz-2026"
+            maxlength="32"
+            aria-describedby="podpowiedz-kod blad-kod">
+          <p class="pole__podpowiedz" id="podpowiedz-kod">Litery bez ogonków, cyfry, myślnik i podkreślenie. Do 32 znaków. Puste pole = kod losowy.</p>
+          <p class="pole__blad" id="blad-kod" hidden></p>
+        </div>
+
+        <div class="formularz__akcje">
+          <button type="submit" class="przycisk przycisk--glowny" id="przycisk-dodaj">Skróć link</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── Miejsce na komunikaty (błędy i potwierdzenia) ──────────── -->
+    <div id="komunikat" class="komunikat" role="alert" aria-live="assertive" hidden></div>
+
+    <!-- ── Lista linków ───────────────────────────────────────────── -->
+    <section class="karta" aria-labelledby="tytul-listy">
+      <div class="karta__pasek">
+        <h2 class="karta__tytul" id="tytul-listy">
+          Twoje linki <span class="licznik" id="licznik-linkow" hidden></span>
+        </h2>
+        <button type="button" class="przycisk przycisk--cichy" id="przycisk-odswiez">Odśwież listę</button>
+      </div>
+
+      <p class="stan-listy" id="stan-listy">Wczytuję listę…</p>
+      <ul class="lista" id="lista-linkow" hidden></ul>
+    </section>
+
+    <footer class="stopka">
+      <p>
+        Front nie zna żadnego adresu na pamięć — bierze go z pliku <code>config.js</code>.
+        Aktualnie używany adres API: <code id="stopka-adres-api">—</code>.
+      </p>
+    </footer>
+
+  </main>
+
+  <!-- Kolejność ma znaczenie: config.js MUSI być załadowany przed app.js. -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

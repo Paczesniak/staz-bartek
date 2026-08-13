@@ -1,0 +1,37 @@
+# Środowisko wirtualne Pythona — odtwarzane komendą z README, nie trzymane w repozytorium.
+venv/
+.venv/
+env/
+
+# Pliki pośrednie Pythona.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# Baza SQLite razem z plikami pomocniczymi.
+# Dane nie należą do repozytorium — repozytorium trzyma KOD, nie STAN.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Konfiguracja lokalna. Plik .env.example (bez kropki na końcu nazwy) jest
+# w repozytorium jako dokumentacja, ale .env z prawdziwymi wartościami
+# NIGDY nie może tam trafić — to najczęstszy sposób na przypadkowe
+# opublikowanie hasła.
+.env
+.env.local
+
+# Wyniki narzędzi.
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Pliki edytorów i systemu.
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

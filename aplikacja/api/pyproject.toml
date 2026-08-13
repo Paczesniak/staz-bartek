@@ -1,0 +1,36 @@
+# Konfiguracja narzędzi pomocniczych: testów, lintera i formatera.
+#
+# Trzymanie ustawień w pliku, a nie w parametrach komend, sprawia, że
+# `pytest`, `ruff` i `black` zachowują się tak samo u każdego — również
+# w potoku CI, gdzie nikt nie dopisze parametrów z pamięci.
+
+[tool.pytest.ini_options]
+# Katalog projektu dokładany do ścieżki wyszukiwania modułów, żeby testy
+# widziały pakiet `app` niezależnie od sposobu uruchomienia pytesta.
+pythonpath = ["."]
+testpaths = ["tests"]
+# -q: krócej, --strict-markers: literówka w nazwie znacznika to błąd, nie cisza.
+addopts = "-q --strict-markers"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# E/W  - styl (PEP 8), F - błędy wykrywane statycznie (np. nieużywany import),
+# I    - kolejność importów, B - typowe pułapki, UP - przestarzałe konstrukcje.
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.flake8-bugbear]
+# `Depends(...)` w wartości domyślnej parametru to podstawowy sposób
+# wstrzykiwania zależności w FastAPI. Reguła B008 ostrzega przed wywołaniami
+# w wartościach domyślnych (bo wykonują się raz, przy imporcie) — tutaj
+# jest to zamierzone i wymagane przez framework.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

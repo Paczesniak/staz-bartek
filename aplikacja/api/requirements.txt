@@ -1,0 +1,46 @@
+# Zależności aplikacji linkbox — wersje PRZYPIĘTE (znak ==).
+#
+# Dlaczego przypięte, a nie "najnowsza dostępna"?
+# Bo instalacja ma dać ten sam wynik dzisiaj, za miesiąc i na cudzej maszynie.
+# Bez przypięcia ta sama komenda `pip install -r requirements.txt` uruchomiona
+# tydzień później potrafi zainstalować inną wersję biblioteki i zmienić
+# zachowanie aplikacji, choć w kodzie nikt niczego nie ruszył.
+#
+# Instalacja:  pip install -r requirements.txt
+
+
+# --- Zależności aplikacji (potrzebne do jej uruchomienia) -------------------
+
+# Framework webowy: routing, walidacja, dokumentacja pod /docs.
+fastapi==0.141.1
+
+# Serwer ASGI, który faktycznie przyjmuje połączenia sieciowe.
+# FastAPI sam z siebie nie nasłuchuje — opisuje tylko, co zrobić z żądaniem.
+uvicorn==0.52.1
+
+# Warstwa dostępu do bazy. Używamy SQLAlchemy Core (zapytania bliskie SQL-owi),
+# nie ORM. Ta sama biblioteka obsługuje SQLite i PostgreSQL.
+SQLAlchemy==2.0.51
+
+# Migracje bazy danych — wersjonowanie struktury tabel.
+alembic==1.19.1
+
+# Walidacja i opis danych wejścia/wyjścia (używane przez FastAPI).
+pydantic==2.13.4
+
+
+# --- Narzędzia deweloperskie (testy i sprawdzanie jakości kodu) -------------
+# Nie są potrzebne do samego uruchomienia aplikacji.
+
+# Uruchamianie testów.
+pytest==9.1.1
+
+# Klient HTTP używany przez TestClient z FastAPI do odpytywania aplikacji
+# w testach — bez uruchamiania prawdziwego serwera.
+httpx==0.28.1
+
+# Linter: wyszukuje błędy i niezgodności ze stylem.
+ruff==0.16.2
+
+# Formater: ustawia jednolity styl zapisu kodu.
+black==26.5.1
