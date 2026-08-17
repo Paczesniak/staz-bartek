@@ -139,4 +139,32 @@ Trzy miejsca z których ta aplikacja może dostać wartość APP_PORT:
 
 ### Z7
 
+## Notatka wstępna 
 
+127.0.0.1 oznacza: nasłuchuj tylko na połączenia przychodzące z tej samej maszyny.
+0.0.0.0 oznacza: nasłuchuj na wszystkich interfejsach sieciowych tej maszyny.
+
+Log startowy pokazuje, z jaką konfiguracją aplikacja naprawdę działa, ale powinien pokazywać tylko bezpieczne ustawienia, nigdy sekrety.
+
+## Przewidywania
+
+1. curl http://127.0.0.1:8000/health z drugiej sesji SSH na VM-ce — zadziała?
+Odp.: Tak druga sesja SSH powinna działac na tej samej VM.
+2. Przeglądarka na Windowsie pod http://192.168.56.X:8000/docs — zadziała?
+Odp.: Nie jeśli aplikacja nasłuchuje tylko na 127.0.0.1
+3. Przeglądarka na Windowsie pod http://localhost:8000/docs — zadziała?
+Odp.: Tak bo mam ustawione przekierowania portu
+
+## Zadania
+
+1. Tak zadziałał (curl http://127.0.0.1:8000/health), (http://localhost:8000/docs) zadzaiałał bo mamy przekierowania
+2. LISTEN 0      2048         0.0.0.0:8000      0.0.0.0:*    users:(("python",pid=4626,fd=7))
+3. Nasłuchuję na 0.0.0.0:8000
+4. APP_HOST=0.0.0.0 python -m app
+5. ss -tlnp | grep 8000
+6. POST /api/links zwrócił kod 201, czyli nowy link został poprawnie utworzony.
+
+## Notatka końcowa
+http://localhost:8000/docs na Windowsie zadziałało, ponieważ VirtualBox miał ustawione przekierowanie portu 8000 z hosta do maszyny wirtualnej, więc żądanie wysłane na localhost:8000 zostało przekazane do aplikacji na VM.
+
+### Z8
