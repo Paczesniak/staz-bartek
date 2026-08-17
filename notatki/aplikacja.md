@@ -168,3 +168,144 @@ Odp.: Tak bo mam ustawione przekierowania portu
 http://localhost:8000/docs na Windowsie zadziałało, ponieważ VirtualBox miał ustawione przekierowanie portu 8000 z hosta do maszyny wirtualnej, więc żądanie wysłane na localhost:8000 zostało przekazane do aplikacji na VM.
 
 ### Z8
+
+## Notatka wstępna
+
+Serwer statyczny podaje gotowe pliki HTML/CSS/JS, a serwer API przetwarza żądania, wykonuje logikę i zwraca dane, np. z bazy.
+
+## Zadania 
+
+Strona się otworzy, ale API będzie dla niej niedostępne. Zapisz do notatek:
+- dokładną treść komunikatu na pasku stanu u góry strony,
+Odp.: Odpowiedź API zablokowana przez przeglądarkę (CORS)
+- dokładną treść komunikatu z listy linków,
+Odp.: Nie udało się pobrać listy
+- adres API, który strona wypisuje w nagłówku i w stopce.
+Odp.: http://localhost:8000
+
+
+Wciśnij F12, przejdź na zakładkę konsoli, odśwież stronę i przepisz oryginalny komunikat przeglądarki — cały, razem z nazwą nagłówka, który się w nim pojawia:
+Odp.: Zablokowano żądanie do zasobu innego pochodzenia: zasady „Same Origin Policy” nie pozwalają wczytywać zdalnych zasobów z „http://localhost:8000/health” (brakujący nagłówek CORS „Access-Control-Allow-Origin”). Kod stanu: 200.
+Zablokowano żądanie do zasobu innego pochodzenia: zasady „Same Origin Policy” nie pozwalają wczytywać zdalnych zasobów z „http://localhost:8000/api/links” (brakujący nagłówek CORS „Access-Control-Allow-Origin”). Kod stanu: 200.
+
+## Przewidywania
+
+Przewiduję, że curl http://192.168.56.X:8000/health wykonany na VM-ce nie zadziała, jeśli 192.168.56.X nie jest rzeczywistym adresem przypisanym do tej VM.
+
+### Z9
+
+## Notatka wstępna 
+
+CORS działa tak, że serwer przez Access-Control-Allow-Origin mówi przeglądarce, którym stronom wolno czytać jego odpowiedzi.
+
+CORS nie musi oznaczać, że żądanie nie dotarło do serwera. Często dotarło, serwer odpowiedział 200, tylko przeglądarka nie pozwoliła JavaScriptowi przeczytać odpowiedzi.
+
+## Zadania
+
+# Hipoteza
+
+Spodziewam się, że oba żądania dotrą do API, ale odpowiedź może różnić się nagłówkami, gdy podam Origin
+
+# a) Materiał dowodowy
+
+1. Żądania CURL 
+- curl -i http://10.17.216.90:8000/api/links:
+
+HTTP/1.1 200 OK
+date: Mon, 17 Aug 2026 11:24:57 GMT
+server: uvicorn
+content-length: 224
+content-type: application/json
+
+[{"code":"UhebSc9","url":"https://example.com/bardzo/dluga/sciezka","clicks":0,"created_at":"2026-08-17T10:43:55.208102Z"},{"code":"VzFuhAx","url":"https://example.com","clicks":6,"created_at":"2026-08-17T08:02:30.478645Z"}]
+
+- curl -i -H 'Origin: http://10.17.216.90:3000' http://10.17.216.90:8000/api/links
+
+HTTP/1.1 200 OK
+date: Mon, 17 Aug 2026 11:26:40 GMT
+server: uvicorn
+content-length: 224
+content-type: application/json
+
+[{"code":"UhebSc9","url":"https://example.com/bardzo/dluga/sciezka","clicks":0,"created_at":"2026-08-17T10:43:55.208102Z"},{"code":"VzFuhAx","url":"https://example.com","clicks":6,"created_at":"2026-08-17T08:02:30.478645Z"}]
+
+# Hipoteza 2
+
+Dodanie nagłówka Origin może spowodować, że serwer doda nagłówki CORS do odpowiedzi
+
+# Sprawdzenie 2 
+
+Wykonałem dwa takie same żądania do /api/links, jedno bez Origin
+
+# Wyniki
+
+Oba żądania zwróciły HTTP/1.1 200 OK, a zestaw nagłówków odpowiedzi był taki sam; w odpowiedzi z Origin również nie pojawił się nagłówek Access-Control-Allow-Origin
+
+Serwer odpowiada poprawnie nawet na żądanie zawierające Origin, ale nie dodaje nagłówka CORS pozwalającego przeglądarce udostępnić odpowiedź JavaScriptowi.
+
+2. Zakładka Network w przeglądarce:
+
+Status: 200 OK
+HTTP/1.1
+
+content-length: 49
+content-type: application/json
+date: Mon, 17 Aug 2026 11:37:29 GMT
+server: uvicorn
+
+przeglądarka nie pozwoliła JavaScriptowi odczytać odpowiedzi, bo serwer nie odesłał zgody CORS
+
+3. Front po błędzie fetch() wykonuje dodatkową próbę połączenia bez potrzeby odczytywania odpowiedzi i jeśli ona się powiedzie, rozpoznaje, że serwer działa, a pierwszą odpowiedź zablokował CORS.
+
+## Notatka Doadatkowa
+
+1 → API działa + brak nagłówka CORS
+2 → najmocniejszy dowód CORS: 200 OK, ale przeglądarka blokuje odpowiedź
+3 → API żyje/da się do niego dotrzeć, ale sam CORS-u nie udowadnia
+
+# b) Rozstrzygnij trzy pary
+
+1. Różni sie port 3000 i 8000 - inny
+2. Różni sie hot localhost i 193.168.56.X - inny
+3. Rózni sie protokół http i https - inny 
+
+# c) Napraw - po stronie serwera
+
+Ustawiłem w .env CORS_ORIGINS=http://localhost:3000. 
+Ustawiłem w config.js http://localhost:3000.
+
+# d) Próba kontrolna 
+
+Dla CORS localhost i adres IP to dwa różne originy, nawet jeśli prowadzą do tej samej maszyny, ponieważ host jest częścią originu i musi się dokładnie zgadzać.
+
+# e) Drugi dowód
+
+|                        | przed naprawą | po naprawie                                               |
+| curl bez `Origin`      | brak          |  brak                                                     |
+| curl z `Origin: …3000` | brak          |  access-control-allow-origin: http://localhost:3000       |
+
+## Notatka Dodatkowa
+
+1. Kiedy serwer dodaje CORS?
+Odp.: Gdy dostanie Origin i ten adres jest na liście dozwolonych.
+2. Czemu curl bez Origin nic nie mówi o CORS?
+Odp.: Bo sprawdza tylko, czy API działa, a nie czy pozwala danemu originowi czytać odpowiedź.
+3. Kto blokował odpowiedź?
+Odp.: Przeglądarka, bo serwer nie wysyłał wcześniej zgody Access-Control-Allow-Origin.
+
+# f) Utwal konfiguracje
+
+CORS_ORIGINS=http://localhost:3000
+
+w .env
+
+## Notatki końcowe
+
+1. Kto zablokował odpowiedź i na jakiej podstawie?
+Odp.: Przeglądarka, bo w odpowiedzi brakowało pasującego Access-Control-Allow-Origin.
+2. Dlaczego naprawa była po stronie API?
+Odp.: Bo to API musi wysłać zgodę CORS dla originu frontu; front nie może sam sobie tej zgody nadać.
+3. Od czego zacząłbym teraz?
+Odp.: Najpierw F12 → Network → żądanie → Headers, sprawdziłbym status, Origin i czy odpowiedź zawiera Access-Control-Allow-Origin.
+
+
