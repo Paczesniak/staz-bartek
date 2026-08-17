@@ -309,3 +309,10 @@ Odp.: Bo to API musi wysłać zgodę CORS dla originu frontu; front nie może sa
 Odp.: Najpierw F12 → Network → żądanie → Headers, sprawdziłbym status, Origin i czy odpowiedź zawiera Access-Control-Allow-Origin.
 
 
+### Z10
+
+## Przewidywania
+
+Usługa najpewniej nie wystartuje, bo ręcznie uruchomiona plikacja już zajmuje ten sam port, więc drugi proces dostanie błąd zajetego adresu.
+
+
