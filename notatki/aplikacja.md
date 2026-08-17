@@ -72,3 +72,71 @@ Odpowiedz: 200
 
 ## Notatka
 Kod 307 jest używany zamiast kodu 301 ponieważ przeglądarka pyta za każdym razem o przekierowanie i zliczać kliknięcia. 
+
+### Z5 
+
+1. Zmieniłem port w zmiennej środowiskowej na 9000 (APP_PORT=9000 python -m app) 
+Potwierdziłem curl-em że że odpowiada ({"status":"ok","database":"ok","version":"1.0.0"})
+
+2. Po ustawieu poziomu DEBUG pojawiły się dodatkowe techniczne logi o utworzeniu silnika bazy danych oraz używanym asynico. 
+
+3. APP_PORT=9000 APP_NAME=linkbox-b python -m app, APP_PORT=8000 APP_NAME=linkbox-a python -m app
+
+4. ValueError: LOG_LEVEL musi być jedną z wartości CRITICAL, ERROR, WARNING, INFO, DEBUG, otrzymano: 'GADATLIWY'
+Dobrze że aplikacja nie wstaje bo od razu wykrywa błędną konfiguracje zamist uruchamiać się z nieprawidłowym poziomem logowania. 
+
+5. sudo ss -tlnp | grep -E ':8000|:9000' 
+
+## Notatka
+
+Gorsze byłoby, gdyby aplikacja wystartowała z błędną konfiguracją i przez godzinę pozornie działała, ale np. zapisywała dane do złej bazy albo logowała za mało informacji. Problem wyszedłby dopiero później, gdy użytkownik zgłosi błąd albo okaże się, że dane trafiły w niewłaściwe miejsce
+
+### Z6 
+
+## Notatka wstępna 
+.env to plik z wartościami, source wczytuje je do Basha, a set -a sprawia, że stają się zmiennymi środowiskowymi widocznymi dla uruchamianych programów.
+
+Sekret, który raz trafił do historii repozytorium, należy traktować jak ujawniony; najpierw go zmieniasz, a dopiero potem usuwasz jego ślady z historii.
+
+1. env opisuje:
+- Adres na którym nasłuchuje: 127.0.0.1
+- Port TCP: APP_PORT=8000
+- Adres bazy danych: DATABASE_URL=sqlite:///./links.db
+- Lista dozwolonych originów: CORS_ORIGINS=
+- Poziom logowania: LOG_LEVEL=INFO
+- Nazwa instancji aplikacji: APP_NAME=linkbox
+
+2. Zrobiłem z niego kopie roboczą (cp .env.example .env). Przez nano .env zmieniłem APP_PORT=8000 oraz LOG_LEVEL=DEBUG.
+
+3. (.venv) bartek@ubuntu:~/staz/aplikacja/api$ set -a
+(.venv) bartek@ubuntu:~/staz/aplikacja/api$ source .env
+(.venv) bartek@ubuntu:~/staz/aplikacja/api$ set +a
+
+4. (.venv) bartek@ubuntu:~/staz/aplikacja/api$ cd ~/staz
+(.venv) bartek@ubuntu:~/staz$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   aplikacja/api/app/config.py
+        modified:   notatki/aplikacja.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+## Wyjasnienie
+Plik .env nie pojawia się w git status ponieważ w aplikacja/api/.gitignore znajduje sie wpis .env. 
+
+5. APP_PORT jest pusty w drugiej sesji, ponieważ zmienne środowiskowe ustawione w jednej sesji Bash nie są automatycznie przekazywane do innej, osobnej sesji SSH.
+
+
+## Dodatkowa notatka
+Trzy miejsca z których ta aplikacja może dostać wartość APP_PORT:
+1. APP_PORT=9000 python -m app — tylko dla jednego uruchomienia procesu.
+2. export APP_PORT=9000 albo wczytanie z .env — działa w tej sesji powłoki i dla procesów potomnych; po zamknięciu sesji znika.
+3. ...
+
+### Z7
+
+
