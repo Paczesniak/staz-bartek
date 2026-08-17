@@ -202,11 +202,11 @@ CORS nie musi oznaczać, że żądanie nie dotarło do serwera. Często dotarło
 
 ## Zadania
 
-# Hipoteza
+## Hipoteza
 
 Spodziewam się, że oba żądania dotrą do API, ale odpowiedź może różnić się nagłówkami, gdy podam Origin
 
-# a) Materiał dowodowy
+## a) Materiał dowodowy
 
 1. Żądania CURL 
 - curl -i http://10.17.216.90:8000/api/links:
@@ -229,15 +229,15 @@ content-type: application/json
 
 [{"code":"UhebSc9","url":"https://example.com/bardzo/dluga/sciezka","clicks":0,"created_at":"2026-08-17T10:43:55.208102Z"},{"code":"VzFuhAx","url":"https://example.com","clicks":6,"created_at":"2026-08-17T08:02:30.478645Z"}]
 
-# Hipoteza 2
+## Hipoteza 2
 
 Dodanie nagłówka Origin może spowodować, że serwer doda nagłówki CORS do odpowiedzi
 
-# Sprawdzenie 2 
+## Sprawdzenie 2 
 
 Wykonałem dwa takie same żądania do /api/links, jedno bez Origin
 
-# Wyniki
+## Wyniki
 
 Oba żądania zwróciły HTTP/1.1 200 OK, a zestaw nagłówków odpowiedzi był taki sam; w odpowiedzi z Origin również nie pojawił się nagłówek Access-Control-Allow-Origin
 
@@ -263,22 +263,22 @@ przeglądarka nie pozwoliła JavaScriptowi odczytać odpowiedzi, bo serwer nie o
 2 → najmocniejszy dowód CORS: 200 OK, ale przeglądarka blokuje odpowiedź
 3 → API żyje/da się do niego dotrzeć, ale sam CORS-u nie udowadnia
 
-# b) Rozstrzygnij trzy pary
+## b) Rozstrzygnij trzy pary
 
 1. Różni sie port 3000 i 8000 - inny
 2. Różni sie hot localhost i 193.168.56.X - inny
 3. Rózni sie protokół http i https - inny 
 
-# c) Napraw - po stronie serwera
+## c) Napraw - po stronie serwera
 
 Ustawiłem w .env CORS_ORIGINS=http://localhost:3000. 
 Ustawiłem w config.js http://localhost:3000.
 
-# d) Próba kontrolna 
+## d) Próba kontrolna 
 
 Dla CORS localhost i adres IP to dwa różne originy, nawet jeśli prowadzą do tej samej maszyny, ponieważ host jest częścią originu i musi się dokładnie zgadzać.
 
-# e) Drugi dowód
+## e) Drugi dowód
 
 |                        | przed naprawą | po naprawie                                               |
 | curl bez `Origin`      | brak          |  brak                                                     |
@@ -293,7 +293,7 @@ Odp.: Bo sprawdza tylko, czy API działa, a nie czy pozwala danemu originowi czy
 3. Kto blokował odpowiedź?
 Odp.: Przeglądarka, bo serwer nie wysyłał wcześniej zgody Access-Control-Allow-Origin.
 
-# f) Utwal konfiguracje
+## f) Utwal konfiguracje
 
 CORS_ORIGINS=http://localhost:3000
 
