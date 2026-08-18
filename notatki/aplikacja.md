@@ -464,3 +464,51 @@ Znajdz problem
 
 Były 4 problemy: zły WorkingDirectory, zły Python bez .venv, brak -m app w ExecStart i zajęty port 8000. Najwięcej pomogło journalctl, a po poprawkach staging działa na 8001 i korzysta z tej samej bazy co główna instancja.
 
+### Z13
+
+## Notatka wstępna
+
+Aplikacja tylko wypisuje logi, a systemd albo kontener zajmuje się ich przechowywaniem i dalszą obsługą.
+
+journald - odpbiera logi z systemd
+
+journalctl opcje:
+	- u (pokaż logi konkretnej usługi/unita)
+	- f (obserwuj nowe logi na żywo)
+	- n 50 (pokaż ostatnie 50 linii)
+	- b (pokaż logi tylko z bieżącego uruchomienia systemu od ostatniego bootu)
+	- --since "10 minutes ago" albo --since "2026-08-18 08:00" (pokaże logi od wskazanego czasu)
+	- p err (filtruj po priorytecie, np. tylko błędy)
+	- --no-pager (wypisz wszystko bez otwierania widoku less, więc od razu wracasz do terminala)
+
+journalctl -f śledzi dziennik systemowy
+
+## Zadania
+
+1. [linkbox] app.runtime: CORS: WŁĄCZONY dla 1 origin-ów: http://localhost:3000
+	- zebrało się 492 wpisów rekordów  journalctl -u linkbox -b --no-pager | wc -l
+2. journalctl -u linkbox -f odpalam na żywo
+	- W podglądzie na żywo pojawiały się kolejne żądania GET /health co około 15 sekund, wszystkie ze statusem 200, bo front regularnie sprawdza stan API.
+3. journalctl -u linkbox --since today --no-pager | wc -l 
+	- 636 wyników 
+4. journalctl -u linkbox-staging --since today --no-pager (albo z -p err w tedy pokazuje ten error co był w zadaniu 12) 
+5. journalctl -u linkbox -f | grep health (pokaże mi wszystko z Health)
+
+### Z14
+
+## Notatka wstępna
+
+1. co widzisz na stronie — dosłownie, oba komunikaty,
+Odp.: Na stronie API działa, lista ładuje sie poprawnie
+2. co widzisz w konsoli przeglądarki,
+Odp. Frontent korzysta z API pod adresem http://localhost:8000, żądania GET mają status 200
+3. jedno przewidywanie: gdzie leży problem i dlaczego akurat tam.
+Odp.: Nie ma problemu
+
+## Notatka końcowa
+
+1. Pył problem z CORS został naprawiony w poprzenim zadaniu
+2. systemctl cat ...
+3. potwierdza tylko, że proces usługi działa z punktu widzenia systemd; nie potwierdza, że aplikacja działa poprawnie funkcjonalnie
+
+
