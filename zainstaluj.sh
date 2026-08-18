@@ -10,6 +10,10 @@
 #
 # Skrypt sam znajdzie najnowszą paczkę, rozpakuje ją, zainstaluje lab
 # i posprząta po sobie. Nie musisz pamiętać nazwy pliku ani kolejności kroków.
+#
+# Gdyby kiedyś wziął nie ten dzień co trzeba, możesz wskazać go wprost:
+#
+#     ./zainstaluj.sh kontenery
 # ==============================================================================
 
 set -Eeuo pipefail
@@ -31,12 +35,28 @@ if ((${#PACZKI[@]} == 0)); then
   exit 1
 fi
 
-# Najnowsza według czasu modyfikacji — przy kilku dniach w repo bierzemy tę,
-# która przyszła ostatnim pullem.
-PACZKA="$(ls -t -- "${PACZKI[@]}" | head -n 1)"
+# Wskazany dzień ma pierwszeństwo. Bez argumentu bierzemy najnowszą paczkę
+# według czasu modyfikacji — po „git pull" to zawsze ta, która właśnie
+# przyszła. Jest jednak przypadek, w którym ten czas nic nie mówi: po świeżym
+# „git clone" wszystkie pliki dostają ten sam znacznik i wybór robi się
+# przypadkowy. Dlatego przy kilku paczkach mówimy głośno, którą wzięliśmy.
+if [[ -n "${1:-}" ]]; then
+  PACZKA="lab-${1}.zip"
+  if [[ ! -f "$PACZKA" ]]; then
+    printf 'Nie widzę paczki %s w %s\n\n' "$PACZKA" "$KATALOG_REPO" >&2
+    printf 'Paczki, które tu są:\n' >&2
+    printf '  %s\n' "${PACZKI[@]}" >&2
+    exit 1
+  fi
+else
+  PACZKA="$(ls -t -- "${PACZKI[@]}" | head -n 1)"
+fi
 
 printf '\n== Instalacja labu ==\n\n'
 printf '  paczka: %s\n' "$PACZKA"
+if ((${#PACZKI[@]} > 1)) && [[ -z "${1:-}" ]]; then
+  printf '          (najnowsza z %d w repozytorium — inny dzień: ./zainstaluj.sh <nazwa-dnia>)\n' "${#PACZKI[@]}"
+fi
 
 # ------------------------------------------------------------------------------
 # Rozpakuj
