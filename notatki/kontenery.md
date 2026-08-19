@@ -524,7 +524,7 @@ Test końcowy
 
 1. Dlaczego compose.override.yaml automatycznie nadpisuje compose.yaml?
 2. Dlaczego 127.0.0.1 w kontenerze może być problemem?
-3. Przy kolejnych zadaniach warto ograniczyć powtarzanie tematów związanych z CORS i prostymi błędami przeglądarki.
+3. Przy kolejnych zadaniach warto ograniczyć powtarzanie tematów związanych z CORS.
 
 
 01101011 01101111 01101110 01101001 01100101 01100011 00100000 01000011 01001111 01010010 01010011
