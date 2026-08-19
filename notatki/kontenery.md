@@ -293,8 +293,7 @@ Zatrzymany kontener nadal isnieje i ma logi, a usuniety znika razem ze swoim sta
 
 ### Z6
 
-## Notatka początkowa 
-
+## Notatka początkow
 docker stop - kontener przestaje działać, ale jego wartwa zapisywalna zostaje
 docker start - uruchamiasz ten sam kontener, wiec jego wcześniejsze pliki nadal są
 docker rm - kontener znika razem ze swoją wartą zapisywalną
@@ -336,4 +335,31 @@ Trwałość: zmienna powłoki → tmpfs → warstwa kontenera → dysk.
 Warstwa kontenera wygląda jak normalny dysk, ale znika po usunięciu kontenera.
 
 docker rm -f usunął kontener razem z jego warstwą i danymi.
+
+### Z7 
+
+## Notatka startowa
+
+Named volume → zwykle dane bazy i dane trwałe.
+Bind mount → zwykle kod i pliki, które chcesz bezpośrednio współdzielić z hostem.
+
+Problem wynika z uprawnień: wolumen może być widoczny jako katalog należący do root, a proces działa jako zwykły użytkownik. Rozwiązuje się to przez przygotowanie katalogu i jego właściciela w obrazie przed przejściem na USER.
+
+## Zadania
+
+1. docker volume create linkbox-data + -v linkbox-data:/data + DATABASE_URL=sqlite:////data/links.db.
+2. Błąd: sqlite3.OperationalError: unable to open database file; naprawa: RUN mkdir -p /data && chown appuser:appuser /data.
+3. Czas buildu: 1m31.988s, cache: 0 kroków.
+4. Po docker rm -f i uruchomieniu nowego kontenera z tym samym wolumenem oba linki nadal były na liście.
+5. docker volume inspect linkbox-data pokazuje Mountpoint; dane należą do Dockera i nie edytuje się ich ręcznie.
+6. Kontener bez wolumenu ma własną bazę, więc lista linków jest pusta; po teście kontener usuwamy.
+
+## Notatka końcowa
+
+Montując wolumen, deklaruję, że dana ścieżka przestaje być częścią warstwy zapisywalnej kontenera.
+
+Trwałość: zmienna powłoki → tmpfs → warstwa kontenera → wolumen → dysk hosta.
+
+Po docker rm znika kontener i jego warstwa zapisywalna, ale wolumen zostaje; wiem to, bo po uruchomieniu nowego kontenera z tym samym wolumenem linki nadal były dostępne.
+
 
