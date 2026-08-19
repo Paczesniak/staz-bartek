@@ -467,3 +467,64 @@ web i api są
 
 zisiaj: systemd uruchamia Dockera, a restart: unless-stopped uruchamia kontenery.
 Jutro: tak, front powinien wstać sam po uruchomieniu VM.
+
+### Z10 
+
+## Notatka startowa
+
+docker compose config - ono pokazuje wynikową konfigurację, którą Compose faktycznie złożył: łączy pliki, podstawia zmienne i rozwija skrócone zapisy do pełniejszej postaci.
+
+docker compose config pokazuje wynikową konfigurację po połączeniu plików i podstawieniu zmiennych; kilka plików Compose może się nakładać, a późniejsze ustawienia mogą nadpisywać wcześniejsze.
+
+Na stronie: „Odpowiedź API zablokowana przez przeglądarkę (CORS)” oraz „Nie udało się pobrać listy — szczegóły w komunikacie powyżej.”
+
+W konsoli: błąd CORS związany z brakiem pasującego nagłówka Access-Control-Allow-Origin.
+
+## Przewidywanie
+
+Przewidywanie: problem jest w ustawieniach CORS w API, bo API działa, ale przeglądarka blokuje odpowiedź dla strony z localhost:3000.
+
+## Zadania
+
+Problem 1
+- Objaw: Front pokazuje „API nieosiągalne”, a curl zwraca Connection reset by peer.
+- Hipoteza: API nasłuchuje na złym adresie.
+- Sprawdzenie: docker compose logs api oraz docker compose config.
+- Przyczyna: APP_HOST=127.0.0.1, więc API było dostępne tylko wewnątrz kontenera.
+- Poprawka: zmiana na APP_HOST=0.0.0.0.
+
+Problem 2
+- Objaw: Po naprawieniu API działało, ale miało złą bazę danych i nie korzystało z wcześniejszych linków.
+- Hipoteza: API korzysta z niewłaściwej ścieżki do bazy.
+- Sprawdzenie: docker compose logs api oraz docker compose config.
+- Przyczyna: DATABASE_URL=sqlite:////tmp/links.db zamiast bazy z wolumenu.
+- Poprawka: zmiana na DATABASE_URL=sqlite:////data/links.db.
+
+Problem 3
+- Objaw: compose.yaml wyglądał poprawnie, ale docker compose config pokazywał inne wartości.
+- Hipoteza: konfigurację nadpisuje drugi plik Compose.
+- Sprawdzenie: ls -la compose* oraz sprawdzenie com.docker.compose.project.config_files.
+- Przyczyna: compose.override.yaml nadpisywał APP_HOST i DATABASE_URL.
+- Poprawka: poprawiłem wartości w compose.override.yaml.
+
+Test końcowy
+	Wykonałem:
+		- docker compose down
+		- docker compose up -d
+
+	Po ponownym uruchomieniu front działał, API było zielone i wcześniejsze linki z wolumenu nadal były dostępne.
+
+## Notatka końcowa
+
+- Były 2 problemy: zły adres API (APP_HOST) z modułu sieć/porty i zła baza (DATABASE_URL) z modułu dane/wolumeny.
+- Przełom dało docker compose config, bo pokazało, że compose.override.yaml nadpisuje mój compose.yaml.
+- docker compose ps mówi tylko, że kontenery działają, ale nie że aplikacja w środku działa poprawnie i używa właściwych danych. 
+
+## Trzy pytania
+
+1. Dlaczego compose.override.yaml automatycznie nadpisuje compose.yaml?
+2. Dlaczego 127.0.0.1 w kontenerze może być problemem?
+3. Przy kolejnych zadaniach warto ograniczyć powtarzanie tematów związanych z CORS i prostymi błędami przeglądarki.
+
+
+01101011 01101111 01101110 01101001 01100101 01100011 00100000 01000011 01001111 01010010 01010011
