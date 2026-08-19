@@ -362,4 +362,108 @@ Trwałość: zmienna powłoki → tmpfs → warstwa kontenera → wolumen → dy
 
 Po docker rm znika kontener i jego warstwa zapisywalna, ale wolumen zostaje; wiem to, bo po uruchomieniu nowego kontenera z tym samym wolumenem linki nadal były dostępne.
 
+### Z8
 
+## Notatka startowa
+
+Compose.yaml - plik w którym opisuje cały zestaw kontenerów i ich konfiguracje
+usługa - to opis jednego typu kontenera
+image: - oznacza użyj gotowego obrazu
+build: - oznacza zbuduj obraz z Dozkerfile z podanej lokazlizacji
+Compose przenosi parametry uruchomienia do pliku 
+
+docker compose up -d:
+- czyta compose.yaml,
+- w razie potrzeby buduje obrazy,
+- tworzy sieci/wolumeny,
+- tworzy i uruchamia kontenery,
+- -d oznacza działanie w tle.
+
+docker compose stop - zatrzymuje kontener
+
+docker compose down - zatrzymuje kontener, usuwa kontenery, usuwa sieć utworzoną przez compose
+
+Wytłumacz mi, skąd Docker Compose bierze nazwę projektu, gdy jej nie podam, i co ta nazwa zmienia w nazwach kontenerów, sieci i wolumenów. Co się dzieje, gdy odwołam się w pliku compose do wolumenu, który już istnieje na maszynie — czy Compose go użyje, czy utworzy własny? Jak się wskazuje ten istniejący? Odpowiadaj ogólnie.
+
+## Zadania
+
+1. stworzyłem compose.yaml
+services:
+  api:
+    build: ./api
+    ports:
+      - "8000:8000"
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8000
+      CORS_ORIGINS: http://localhost:3000
+      APP_NAME: linkbox-compose
+      DATABASE_URL: sqlite:////data/links.db
+    volumes:
+      - linkbox-data:/data
+    restart: unless-stopped
+
+volumes:
+  linkbox-data:
+    external: true
+    name: linkbox-data
+
+2. docker compose up -d
+docker compose ps
+docker compose logs
+
+3. docker volume ls
+DRIVER    VOLUME NAME
+local     linkbox-data
+
+4. curl działa
+
+5. Po docker compose down i ponownym docker compose up -d linki nadal były dostępne, ponieważ Compose usunął kontener i sieć, ale nie usunął wolumenu z bazą danych.
+
+## Notatki końcowe
+
+-p 8000:8000 - ports: "8000:8000"
+-e APP_HOST=0.0.0.0 - environment: APP_HOST: 0.0.0.0
+-e APP_PORT=8000 - environment: APP_PORT: 8000
+-e CORS_ORIGINS=http://localhost:3000 - environment: CORS_ORIGINS: http://localhost:3000
+-e APP_NAME=linkbox-compose - environment: APP_NAME: linkbox-compose
+-e DATABASE_URL=sqlite:////data/links.db - environment: DATABASE_URL: sqlite:////data/links.db
+-v linkbox-data:/data - volumes: linkbox-data:/data
+--name - Compose nadał nazwę automatycznie: aplikacja-api-1
+linkbox:1.0 - build: ./api
+restart - restart: unless-stopped
+
+docker compose down usuwa kontener i sieć, ale zostawia wolumen; docker compose down -v usuwa również wolumen i znajdujące się w nim dane. 
+
+### Z9
+
+## Notatki startowe
+
+nginx: pliki /usr/share/nginx/html, port 80; bind mount udostępnia katalog hosta w kontenerze, a :ro blokuje zapis z kontenera.
+
+systemd uruchamia Dockera, a Docker (dockerd) na podstawie zapisanej polityki restartu wznawia kontenery.
+
+## Zadania
+
+1. dopisałem nową usługę 
+
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+2. docker compose up -d && docker compose ps
+
+web i api są 
+
+3. już były wyłączone
+
+4. Po usunięciu CORS_ORIGINS użytkownik zobaczył komunikat Odpowiedź API zablokowana przez przeglądarkę (CORS) oraz brak listy linków. W konsoli przeglądarki pojawił się błąd braku pasującego nagłówka Access-Control-Allow-Origin.
+
+## Notatka końcowa
+
+zisiaj: systemd uruchamia Dockera, a restart: unless-stopped uruchamia kontenery.
+Jutro: tak, front powinien wstać sam po uruchomieniu VM.
