@@ -147,3 +147,58 @@ Obraz zawiera kod aplikacji i wymagane pliki, ale nie zawiera lokalnej konfigura
 
 - Narzędzia deweloperskie (pytest, ruff, black) nie powinny trafiać do obrazu produkcyjnego; na produkcji rozdzieliłbym zależności deweloperskie od produkcyjnych i instalował tylko te potrzebne do działania aplikacji.
 
+### Z3
+
+## Notaka startowa
+
+jej dane wejściowe się nie zmieniły, używa starej warstwy zamiast wykonywać krok ponownie.
+
+Jeśli zmieni się jeden krok, np. kopiowany plik, ta warstwa jest budowana od nowa i wszystkie kolejne też, bo każda następna warstwa bazuje na poprzedniej.
+
+## Przewidywania
+
+1. Nie — jeśli zależności są instalowane przed kopiowaniem kodu, zmiana komentarza unieważni tylko warstwę z kodem i kolejne, a instalacja zależności zostanie z cache.
+
+2. Nie — jeśli zależności są instalowane przed kopiowaniem kodu, zmiana komentarza unieważni tylko warstwę z kodem i kolejne, a instalacja zależności zostanie z cache.
+
+## Zadania
+
+1. time docker build -t linkbox:1.0 . 
+- real    0m0.961s
+- user    0m0.044s
+- sys     0m0.199s
+
+2. time docker build -t linkbox:1.0 . (po dodaniu literki do komentarza)
+- real    0m14.208s
+- user    0m0.083s
+- sys     0m1.211s
+
+3. cp Dockerfile Dockerfile.zle
+
+zminiłem kolejność:
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN useradd --create-home appuser
+
+COPY --chown=appuser:appuser . .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+USER appuser
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "alembic upgrade head && python -m app"]
+
+4. Dockerfile
+- real    0m10.258s
+- user    0m0.043s
+- sys     0m0.182s
+
+Dockerfile.zle
+- real    0m45.760s
+- user    0m0.097s
+- sys     0m1.109s
