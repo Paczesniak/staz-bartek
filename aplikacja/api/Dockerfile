@@ -8,6 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN useradd --create-home appuser
+RUN mkdir -p /data && chown appuser:appuser /data
+
 USER appuser
 
 EXPOSE 8000

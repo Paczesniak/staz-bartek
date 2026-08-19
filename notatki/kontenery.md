@@ -291,4 +291,49 @@ APP_PORT:
 
 Zatrzymany kontener nadal isnieje i ma logi, a usuniety znika razem ze swoim stanem i logami. 
 
+### Z6
+
+## Notatka początkowa 
+
+docker stop - kontener przestaje działać, ale jego wartwa zapisywalna zostaje
+docker start - uruchamiasz ten sam kontener, wiec jego wcześniejsze pliki nadal są
+docker rm - kontener znika razem ze swoją wartą zapisywalną
+
+Dwa kontenery mają wlasną osobną wartę zapisywalną !!!
+
+## Przewidywania
+
+1. Pod jaką ścieżką w kontenerze wyląduje plik links.db? Odpowiedz konkretną ścieżką, nie opisem.
+Odp.: /tmp/links.db
+
+2. Tworzysz link, zatrzymujesz kontener (docker stop) i uruchamiasz go z powrotem (docker start). Link będzie?
+Odpl.: Tak link będzie
+
+3. Tworzysz link, usuwasz kontener (docker rm) i uruchamiasz nowy z tego samego obrazu. Link będzie?
+Odp.: Nie linku nie będzie 
+
+4. Plik links.db, który leży od wczoraj na maszynie w ~/staz/aplikacja/api — ma z tym wszystkim cokolwiek wspólnego?
+Odp.: Nie
+
+## Zadania
+
+1. [{"code":"7ZXdHj6","url":"https://example.com/2","clicks":0,"created_at":"2026-08-19T10:39:41.588811Z"},{"code":"5hZ2qEM","url":"https://example.com/1","clicks":0,"created_at":"2026-08-19T10:39:34.668145Z"},{"code":"a4gw93k","url":"https://example.com","clicks":0,"created_at":"2026-08-19T10:13:07.783591Z"}] - curl curl http://127.0.0.1:8000/api/links
+
+2. docker exec linkbox-main ls -lh /tmp/links.db (-rw-r--r-- 1 appuser appuser 20K Aug 19 10:39 /tmp/links.db)
+
+3. A /tmp/links.db
+
+4. [{"code":"7ZXdHj6","url":"https://example.com/2","clicks":0,"created_at":"2026-08-19T10:39:41.588811Z"},{"code":"5hZ2qEM","url":"https://example.com/1","clicks":0,"created_at":"2026-08-19T10:39:34.668145Z"},{"code":"a4gw93k","url":"https://example.com","clicks":0,"created_at":"2026-08-19T10:13:07.783591Z"}]
+
+5. Nowy kontener nowa warstwa zapisywania curl http://127.0.0.1:8000/api/links oddaje [] puste
+
+6. Na VM ma date modyfikacji z 17 sierpnia wiec dzisiejsze operacje kontenerze go nie zmieniły
+
+## Notatki końcowe
+
+Trwałość: zmienna powłoki → tmpfs → warstwa kontenera → dysk.
+
+Warstwa kontenera wygląda jak normalny dysk, ale znika po usunięciu kontenera.
+
+docker rm -f usunął kontener razem z jego warstwą i danymi.
 
