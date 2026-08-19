@@ -202,3 +202,93 @@ Dockerfile.zle
 - real    0m45.760s
 - user    0m0.097s
 - sys     0m1.109s
+
+### Z4
+
+## Notatka startowa
+
+EXPOSE → informacja/dokumentacja o porcie kontenera
+-p → realnie udostępnia port kontenera przez port hosta
+
+Czyli to -p otwiera drogę z zewnątrz, a EXPOSE tylko mówi, którego portu aplikacja używa.
+
+
+127.0.0.1 w kontenerze to localhost kontenera, nie hosta; jeśli aplikacja słucha tylko tam, -p nie wystarczy, żeby udostępnić ją z zewnątrz.
+
+## Przewidywania
+
+1. Twoja wczorajsza usługa linkbox jest włączona do automatycznego startu i trzyma port 8000. Co się stanie, gdy uruchomisz kontener z -p 8000:8000?
+Odp.: Nie uruchomi się poprawnie.
+
+2. Kontener uruchomiony bez -p: curl http://127.0.0.1:8000/health z VM-ki — zadziała?
+Odp.: Zadziała
+
+3. Kontener uruchomiony z -p 8000:8000, aplikacja w środku z domyślną konfiguracją — curl z VM-ki zadziała?
+Odp.: Nie zadziała
+
+4. Ten sam kontener uruchomiony z -p 8080:8000 — curl z VM-ki na port 8080 zadziała? A przeglądarka na Windowsie pod tym portem?
+Odp.: Nie zadziała
+
+## Zadania
+
+1. sudo systemctl stop linkbox (zatrzymałem usługe)
+systemctl is-active linkbox (jest na inactive)
+sudo ss -tlnp | grep ':8000' (nie ma komunikatu czyli jest wolny)
+
+2. Bez -p kontener działał, ale curl z VM na 127.0.0.1:8000 nie zadziałał (Could not connect to server), ponieważ port kontenera nie był wystawiony na hosta.
+
+3. Przy -p 8000:8000 połączenie dochodziło do kontenera, ale aplikacja słuchała tylko na 127.0.0.1 wewnątrz kontenera, więc curl zakończył się Connection reset by peer.
+
+4. APP_HOST=127.0.0.1 oznacza, że aplikacja przyjmuje połączenia wyłącznie z tej samej maszyny — z innego komputera będzie niewidoczna
+Wczoraj 127.0.0.1 oznaczał localhost całej VM, a dziś oznacza localhost wewnątrz kontenera, więc host nie może dostać się do aplikacji przez ten adres.
+
+5. curl http://127.0.0.1:8000/health
+{"status":"ok","database":"ok","version":"1.0.0"}
+
+6. Could not connect to server
+
+## Notatki końcowe
+
+127.0.0.1 nadal oznacza localhost, ale teraz jest to localhost kontenera, a nie VM.
+
+-p nie pomagało, bo po stronie kontenera łączył się ruch z interfejsu sieciowego, a aplikacja słuchała tylko na 127.0.0.1.
+
+Są 2 przekierowania: Windows → VM i VM → kontener; 8000 działał, bo oba istniały, a dla 8080 brakowało przekierowania w VirtualBox.
+
+### Z5 
+
+## Notatki początkowe 
+
+ENV ustawia domyślną wartość w obrazie, a -e ustawia ją przy uruchomieniu kontenera i ma wyższy priorytet. Wartości zależnych od środowiska nie zapisuje się w obrazie, żeby ten sam obraz działał w różnych środowiskach i nie przechowywał sekretów.
+
+docker logs -f → śledzi na żywo stdout/stderr jednego kontenera.
+journalctl -f → śledzi na żywo journal systemu/systemd, czyli logi usług i systemu hosta.
+
+## Zadania
+
+1. Kontenter linbox-main uruchomił sie w tle i przyją konfiguracje.
+
+Logi: 
+Uruchamiam aplikację linkbox-main w wersji 1.0.0
+Nasłuchuję na 0.0.0.0:8000
+CORS: WŁĄCZONY dla 1 origin-ów: http://localhost:3000
+
+2. 0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+
+3. 2026-08-19T10:13:07+0000 INFO     [linkbox-main] uvicorn.access: 172.17.0.1:47836 - "POST /api/links HTTP/1.1" 201
+curl wygenerował POST /api/links ze statusem 201, czyli link został utworzony poprawnie.
+
+4. Mam 1 obraz linkbox:1.0 i 2 działające konteney. 1 obraz 2 kontenery
+
+5. Kontener zakończył się błędem przez nieprawidłową wartość LOG_LEVEL=GADATLIWY znalazłem go przez docker ps -a, a przyczynę sprawdziałem poleceniem docker logs linkbox-zly-log
+
+6. Posprzątałem poleceniami docker stop linkbox-drugi i rm linkbox-drugi
+
+## Notatki końcowe
+
+APP_PORT:
+- docker run -e → zmienna w shellu / .env → systemd Environment= / EnvironmentFile= → ENV w obrazie.
+
+Zatrzymany kontener nadal isnieje i ma logi, a usuniety znika razem ze swoim stanem i logami. 
+
+
