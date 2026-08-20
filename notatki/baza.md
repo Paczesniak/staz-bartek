@@ -253,4 +253,213 @@ psycopg — nowsza wersja 3, obecnie zalecana do nowych projektów
 - Przewidywanie częściowo się zgodziło: aplikacja faktycznie nie wystartowała, ale problemem był brak sterownika psycopg, a nie sama gotowość bazy
 - Lista jest pusta, bo aplikacja korzysta teraz z nowej bazy PostgreSQL; wczorajsze linki nadal są w starej bazie SQLite zapisanej w wolumenie
 
+### Z6 
+
+## Notatka startowa
+
+Migracje to wersjonowane zmiany struktury bazy, np. utworzenie tabeli, dodanie kolumny albo zmiana typu pola.
+
+Jednorazowe „utwórz tabele z kodu” mówi tylko, jak ma wyglądać baza teraz. Migracje zapisują kolejne kroki zmian:
+- 0001 - utwórz tabelę links
+- 0002 - dodaj kolumnę created_at
+- 0003 - zmień długość pola code
+
+Narzędzie Alembic:
+- alembic upgrade head — wykonuje wszystkie brakujące migracje aż do najnowszej wersji.
+- alembic current — pokazuje, na której migracji jest aktualnie baza.
+- alembic history — pokazuje historię dostępnych migracji.
+- alembic_version — tabela w bazie, w której Alembic zapisuje aktualną wersję migracji.
+
+## Zadania
+
+1. Użyte komendy:
+- \dt
+             List of relations
+ Schema |      Name       | Type  |  Owner
+--------+-----------------+-------+---------
+ public | alembic_version | table | linkbox
+ public | links           | table | linkbox
+(2 rows)
+
+- SELECT * FROM alembic_version;
+
+ version_num
+-------------
+ 0001
+(1 row)
+
+- SELECT count(*) FROm links;
+
+ count
+-------
+     0
+(1 row)
+
+2. W bazie są dwie tabele: links i alembic_version.
+links przechowuje linki, a alembic_version zapisuje, na której wersji migracji znajduje się baza
+
+3. docker compose exec api alembic current
+INFO     [alembic] alembic.env: Łączę się z bazą: postgresql+psycopg2://linkbox:***@db:5432/linkbox
+INFO     [alembic] alembic.runtime.migration: Context impl PostgresqlImpl.
+INFO     [alembic] alembic.runtime.migration: Will assume transactional DDL.
+0001 (head)
+
+4. docker compose exec api alembic history
+<base> -> 0001 (head), Migracja początkowa — tworzy tabelę links.
+
+## Notaktka końcowa
+
+- \dt:
+public | alembic_version | table | linkbox
+public | links           | table | linkbox
+
+- alembic current:
+0001
+
+- Alembic wie, że migracja została wykonana, bo zapisuje jej numer w tabeli alembic_version. Gdyby ta tabela zniknęła, Alembic straciłby informację o aktualnej wersji bazy i mógłby próbować wykonywać migracje ponownie albo zgłaszać błędy
+
+- Pliki migracji fizycznie leżą w projekcie aplikacji, zwykle w katalogu alembic/versions/, i trafiają do repozytorium, żeby każdy miał tę samą historię zmian struktury bazy
+
+### Z7
+
+## Notatka wstepna
+
+Ten sam plik migracji działa w SQLite i PostgreSQL, bo Alembic zwykle nie zapisuje „surowego SQL”, tylko używa operacji SQLAlchemy, np. „utwórz tabelę” albo „dodaj kolumnę”.
+
+## Zadania
+
+1. nano ~/staz/aplikacja/api/alembic/versions/20260810_0001_create_links_table.py
+- Nazwa tabeli: links
+- Kolumny (id, code, url, clicks, created_at)
+
+2. docker compose exec db psql -U linkbox -d linkbox -c '\d links'
+
+                                       Table "public.links"
+   Column   |           Type           | Collation | Nullable |              Default
+------------+--------------------------+-----------+----------+-----------------------------------
+ id         | integer                  |           | not null | nextval('links_id_seq'::regclass)
+ code       | character varying(64)    |           | not null |
+ url        | character varying(2048)  |           | not null |
+ clicks     | integer                  |           | not null | 0
+ created_at | timestamp with time zone |           | not null |
+Indexes:
+    "pk_links" PRIMARY KEY, btree (id)
+    "uq_links_code" UNIQUE CONSTRAINT, btree (code)
+ 
+3. docker run --rm -v linkbox-data:/dane python:3.12-slim \
+  python -c "import sqlite3; c=sqlite3.connect('/dane/links.db'); print([r[0] for r in c.execute('SELECT name FROM sqlite_master WHERE type=\"table\"')]); print(c.execute('SELECT count(*) FROM links').fetchone())"
+Wynik: (2,)
+
+## Notatka końcowa
+
+- Kolumny tabeli links w PostgreSQL: id, code, url, clicks, created_at.
+- Stara baza SQLite: 2 linki. Nowa baza PostgreSQL: 0 linków.
+- Migracja jest „wersjonowana”, bo każda zmiana struktury ma swój numer, np. 0001; dwie bazy są na tej samej wersji, jeśli mają ten sam numer w alembic_version.
+
+### Z8
+
+## Notatka startowa
+
+1. Python: SQLite → PostgreSQL
+- Skrypt czyta rekordy z SQLite i zapisuje je do Postgresa
+- Plus: pełna kontrola nad typami i błędami
+- Pułapki: daty, NULL, duplikaty, kolejność ID i transakcje
+
+2. SQLite → CSV → PostgreSQL
+- Eksportujesz dane do CSV, potem importujesz np. przez COPY
+- Plus: proste i czytelne
+- Pułapki: przecinki/cudzysłowy w danych, kodowanie, NULL, format dat
+
+3. Generowanie INSERT
+- SQLite generuje polecenia typu:
+INSERT INTO links (...) VALUES (...);
+- Potem wykonujesz je w PostgreSQL
+- Pułapki: różnice składni SQL, escapowanie tekstu, typy danych i większe pliki
+
+Ręczne ID i sekwencja to dwie osobne rzeczy, więc po imporcie danych warto je zsynchronizować.
+
+Polecenie docker run --rm -v NAZWA_WOLUMENU:/gdzies OBRAZ uruchamia jednorazowy kontener i podpina do niego istniejący wolumen
+- --rm — po zakończeniu kontener zostanie automatycznie usunięty
+- -v NAZWA_WOLUMENU:/gdzies — podpina wolumen Dockera do katalogu /gdzies wewnątrz kontenera
+- OBRAZ — obraz, z którego ma powstać ten tymczasowy kontener
+
+## Zadania
+
+1. SQLite do PostgreSQL
+
+Polecenia: 
+- mkdir -p narzedzia
+- nano narzedzia/migracja_sqlite_postgres.py
+- import os
+import sqlite3
+import psycopg2
+
+sqlite_conn = sqlite3.connect("/dane/links.db")
+sqlite_cur = sqlite_conn.cursor()
+
+sqlite_cur.execute(
+    "SELECT id, code, url, clicks, created_at FROM links"
+)
+rows = sqlite_cur.fetchall()
+
+pg_conn = psycopg2.connect(
+    host="db",
+    dbname="linkbox",
+    user="linkbox",
+    password=os.environ["POSTGRES_PASSWORD"],
+)
+
+pg_cur = pg_conn.cursor()
+
+for row in rows:
+    pg_cur.execute(
+        """
+        INSERT INTO links (id, code, url, clicks, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        row,
+    )
+
+pg_conn.commit()
+
+pg_cur.close()
+pg_conn.close()
+sqlite_cur.close()
+sqlite_conn.close()
+
+print(f"Przeniesiono rekordów: {len(rows)}")
+- ~/staz/aplikacja$ docker network ls
+NETWORK ID     NAME                DRIVER    SCOPE
+aa3695c799e4   aplikacja_default   bridge    local
+a32c3950ba86   bridge              bridge    local
+5ea9768dd32c   host                host      local
+8a5812a9c045   none                null      local
+- docker run --rm \
+  --network aplikacja_default \
+  -v linkbox-data:/dane \
+  -v ~/staz/narzedzia:/narzedzia:ro \
+  --env-file ~/staz/aplikacja/.env \
+  python:3.12-slim \
+  sh -c "pip install psycopg2-binary==2.9.11 && python /narzedzia/migracja_sqlite_postgres.py"
+ODP.: Przeniesiono rekordów: 2
+
+2. docker compose exec db psql -U linkbox -d linkbox -c "SELECT count(*) FROM links;"
+
+ count
+-------
+     2
+(1 row)
+
+3. Na stronie pojawiły się 2 linki (działa)
+
+4. Dodał sie 3 link
+
+5. Jest zapisany
+
+## Notaka końcowa 
+
+- Wybrałem skrypt w Pythonie, bo pozwala bezpośrednio odczytać rekordy z SQLite i zapisać je do PostgreSQL, a każdy krok jest łatwy do prześledzenia.
+- Przed migracją: SQLite miało 2 linki, PostgreSQL 0. Po migracji: PostgreSQL miało 2 linki i front również pokazywał 2 linki
+- Przy dodawaniu nowego linku nic się nie stało, bo po migracji sekwencja została zsynchronizowana z największym id, więc PostgreSQL nadał poprawne kolejne ID
+- Gdybym uruchomił migrację drugi raz, dostałbym błąd przez duplikaty id lub unikalnego code
 
