@@ -490,4 +490,19 @@ docker compose exec -T db pg_dump -U linkbox -d linkbox --clean --if-exists > ~/
 head -30 ~/staz/kopie/linkbox-2026-08-20.sql
 grep -c "INSERT\|COPY" ~/staz/kopie/linkbox-2026-08-20.sql
 
-3. 
+3. grep -c "INSERT\|COPY" ~/staz/kopie/linkbox-2026-08-20.sql
+grep -n "COPY public.links\|INSERT INTO public.links" ~/staz/kopie/linkbox-2026-08-20.sql
+
+4. cd ~/staz
+echo "kopie/" >> .gitignore
+git status
+
+## Notatka końcowa
+
+- docker compose exec -T db pg_dump -U linkbox -d linkbox --clean --if-exists > ~/staz/kopie/linkbox-2026-08-20.sql (polecenie do kopii)
+- ls -lh ~/staz/kopie/ (rozmiar plików)
+- grep -c "INSERT\|COPY" ~/staz/kopie/linkbox-2026-08-20.sql (liczba linii z danymi)
+- Plik nie powinien trafić do repozytorium, bo zawiera rzeczywiste dane z bazy
+grep -ni "password\|postgres_password\|mojehaslo" ~/staz/kopie/linkbox-2026-08-20.sql (sprawdziłem i nie ma nic)
+
+
