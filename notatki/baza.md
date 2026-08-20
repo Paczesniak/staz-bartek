@@ -505,4 +505,64 @@ git status
 - Plik nie powinien trafić do repozytorium, bo zawiera rzeczywiste dane z bazy
 grep -ni "password\|postgres_password\|mojehaslo" ~/staz/kopie/linkbox-2026-08-20.sql (sprawdziłem i nie ma nic)
 
+### Z10
+
+## Notatki startowe
+
+Plik .sql z pg_dump wczytujesz przez psql, np.:
+
+docker compose exec -T db \
+  psql -U linkbox -d linkbox -v ON_ERROR_STOP=1 \
+  < ~/staz/kopie/linkbox-2026-08-20.sql
+
+Co się dzieje: 
+- docker compose exec db — uruchamia psql w kontenerze bazy
+- -T — wyłącza pseudo-terminal; przy przekierowaniu < plik.sql jest to potrzebne, żeby psql dostał czysty strumień danych
+- psql -U linkbox -d linkbox — łączy się z bazą linkbox
+- -v ON_ERROR_STOP=1 — każe psql przerwać odtwarzanie przy pierwszym błędzie zamiast lecieć dalej i zostawić bazę w częściowo odtworzonym stanie
+- < plik.sql — podaje zawartość dumpa do psql
+
+Jeśli odtwarzasz dump na bazę, w której tabele już istnieją, mogą wystąpić konflikty typu „table already exists”. 
+
+Dump z:
+--clean --if-exists
+najpierw próbuje usunąć istniejące obiekty, a dopiero potem tworzy je od nowa.
+
+- --clean — dodaje polecenia DROP
+- --if-exists — sprawia, że DROP nie zgłasza błędu, jeśli danego obiektu nie ma
+
+## Zadania
+
+1.  docker compose exec db psql -U linkbox -d linkbox -c "SELECT count(*) FROM links;" 
+- 0 (1 row)
+
+Na stronie nie ma żadnego linku (0 linków)
+
+2. docker compose exec -T db \
+  psql -U linkbox -d linkbox -v ON_ERROR_STOP=1 \
+  < ~/staz/kopie/linkbox-2026-08-20.sql
+
+3.  docker compose exec db psql -U linkbox -d linkbox -c "SELECT count(*) FROM links;"
+- 3 (1 row)
+
+curl http://localhost:8000/api/links:
+- Api zwraca 3 linki
+
+- lista w przeglądarce (są 3 wpisy)
+
+4. Dodałem 4 wpis (wszystko działa)
+
+## Notatka końcowa
+
+1. Objaw: Baza miała 0 rekordów, API nie zwracało linków, a w przeglądarce lista była pusta.
+
+2. Przyczyna: Dane zostały usunięte z bieżącej bazy PostgreSQL, ale znajdowały się w wykonanej wcześniej kopii.
+
+3. Naprawa: Odtworzyłem bazę poleceniem: docker compose exec -T db \
+  psql -U linkbox -d linkbox -v ON_ERROR_STOP=1 \
+  < ~/staz/kopie/linkbox-2026-08-20.sql
+
+4. Weryfikacja: SELECT count(*) FROM links; pokazał 3, API /api/links zwróciło 3 linki, a przeglądarka również pokazała 3 wpisy. Dodatkowo udało się poprawnie dodać 4. link.
+
+5. Wniosek: Sprawdziłem, że wykonana kopia faktycznie pozwala odtworzyć nie tylko strukturę bazy, ale też dane i poprawny stan sekwencji. 
 
