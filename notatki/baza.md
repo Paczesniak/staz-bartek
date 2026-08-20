@@ -463,3 +463,31 @@ ODP.: Przeniesiono rekordów: 2
 - Przy dodawaniu nowego linku nic się nie stało, bo po migracji sekwencja została zsynchronizowana z największym id, więc PostgreSQL nadał poprawne kolejne ID
 - Gdybym uruchomił migrację drugi raz, dostałbym błąd przez duplikaty id lub unikalnego code
 
+### Z9
+
+## Notatka startowa
+
+pg_dump - robi logiczny backup PostgreSQL: odczytuje strukturę i dane z bazy i zapisuje je do pliku, z którego można bazę odtworzyć
+- --clean (dodaje usuwanie istniejących obiektów przed ich ponownym utworzeniem)
+- --if-exists (przy usuwaniu używa IF EXISTS, żeby nie wywalać błędów, jeśli czegoś jeszcze nie ma)
+
+Formaty:
+- zwykły SQL — czytelny plik tekstowy z CREATE, INSERT itd.; odtwarzasz np. przez psql
+- Fc — format własny/custom, binarny dla pg_restore; mniej czytelny ręcznie, ale daje większą kontrolę przy odtwarzaniu
+
+Bo jeśli baza i backup są na tej samej maszynie, to awaria dysku, usunięcie plików albo uszkodzenie systemu może zniszczyć jedno i drugie naraz.
+Zasada 3-2-1:
+- 3 kopie danych,
+- na 2 różnych rodzajach nośników,
+- 1 kopia poza główną maszyną/lokalizacją.
+
+## Zadania
+
+1. mkdir -p ~/staz/kopie
+docker compose exec -T db pg_dump -U linkbox -d linkbox --clean --if-exists > ~/staz/kopie/linkbox-2026-08-20.sql
+
+2. ls -lh ~/staz/kopie/
+head -30 ~/staz/kopie/linkbox-2026-08-20.sql
+grep -c "INSERT\|COPY" ~/staz/kopie/linkbox-2026-08-20.sql
+
+3. 
