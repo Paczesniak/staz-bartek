@@ -22,6 +22,9 @@ uvicorn==0.52.1
 # nie ORM. Ta sama biblioteka obsługuje SQLite i PostgreSQL.
 SQLAlchemy==2.0.51
 
+# Sterownik PostgreSQL dla Pythona / SQLAlchemy.
+psycopg2-binary==2.9.11
+
 # Migracje bazy danych — wersjonowanie struktury tabel.
 alembic==1.19.1
 

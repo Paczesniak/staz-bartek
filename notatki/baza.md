@@ -197,4 +197,60 @@ Przebieg:  docker compose up -d -> docker compose ps (tam już zobaczyłem że d
       start_period: 10s
 - Kontener działa” znaczy, że jego proces jest uruchomiony, a „kontener jest zdrowy” znaczy, że dodatkowo przechodzi zdefiniowany healthcheck; bez healthchecka docker compose ps pokazuje tylko, że kontener jest uruchomiony, np. Up.
 
+### Z4
+
+## Notatka startowa
+
+postgresql://uzytkownik:haslo@host:5432/nazwa_bazy:
+- postgresql:// — typ bazy / dialekt; może też wskazywać sterownik, np. postgresql+psycopg://
+- uzytkownik — użytkownik bazy
+- haslo — hasło
+- host — adres maszyny lub nazwa usługi, np. db
+- 5432 — port PostgreSQL
+- nazwa_bazy — konkretna baza
+
+sterownik wybiera część przed ://, np. postgresql+psycopg
+maszynę/usługę wybiera host
+
+## Przewidywania
+
+1. Aplikacja może nie wystartować jeśli brakuje sterowownika PostgresSQL jak jest to wstanie.
+2. W logu spodziwam się błędu o braku sterownika albo problem z połączniem z bazą 
+3. Wczorajszych linków nie bęzie bo były zapisane w SQLite a teraz aplikacja przełączy sie na PostgreSQL
+
+## Zadania
+
+Błąd:
+- ModuleNotFoundError: No module named 'psycopg'
+
+Postgres działa i jest Healthy,
+depends_on działa poprawnie,
+DATABASE_URL wygląda dobrze,
+problem jest już po stronie obrazu api.
+
+### Z5
+
+## Notatka startowa
+
+1. Sterowniki SQLite są już w Pythonie natomiast PostgresSQL ich nie posiada i trzeba doinstalowywać. 
+2. psycopg2 — starszy, bardzo popularny sterownik PostgreSQL dla Pythona
+psycopg2-binary — gotowa binarna wersja psycopg2, łatwiejsza do instalacji
+psycopg — nowsza wersja 3, obecnie zalecana do nowych projektów
+3. Zmiana w requirements.txt nie zmienia już istniejącego obrazu. Pakiety są instalowane podczas docker build, więc trzeba zbudować obraz ponownie
+
+## Zadania
+
+1. Dopisałem psycopg2-binary==2.9.11
+2. Odpaliłem docker compose up -d --build
+3. Baza danych: postgresql (postgresql+psycopg2://linkbox:***@db:5432/linkbox)
+4. curl http://localhost:8000/health
+{"status":"ok","database":"ok","version":"1.0.0"}
+5. storna działa nie ma linków bo nowa baza
+
+## Notaka końcowa
+
+- Baza danych: postgresql (postgresql+psycopg2://linkbox:***@db:5432/linkbox) — zamiast hasła jest ***, bo aplikacja ukrywa hasło w logach, żeby nie ujawniać danych dostępowych.
+- Przewidywanie częściowo się zgodziło: aplikacja faktycznie nie wystartowała, ale problemem był brak sterownika psycopg, a nie sama gotowość bazy
+- Lista jest pusta, bo aplikacja korzysta teraz z nowej bazy PostgreSQL; wczorajsze linki nadal są w starej bazie SQLite zapisanej w wolumenie
+
 
