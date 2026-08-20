@@ -16,3 +16,4 @@ __pycache__/
 # Lokalna konfiguracja i baza — u każdego inna, nie wersjonujemy
 .env
 *.db
+.env
