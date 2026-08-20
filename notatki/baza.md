@@ -566,3 +566,68 @@ curl http://localhost:8000/api/links:
 
 5. Wniosek: Sprawdziłem, że wykonana kopia faktycznie pozwala odtworzyć nie tylko strukturę bazy, ale też dane i poprawny stan sekwencji. 
 
+### Z11
+
+## Notatka startowa
+
+Są dwa różne typy błędów:
+- Brak połączenia z serwerem, np. connection refused, timeout, no route to host
+	nie udało się w ogóle dotrzeć do PostgreSQL. Problem jest wcześniej: sieć, host, port albo sam serwer nie działa.
+- Błędne hasło, np. password authentication failed for user "linkbox"
+	połączenie do serwera doszło, PostgreSQL odpowiedział, ale odrzucił logowanie.
+
+compose.override.yaml jest automatycznie dokładany do compose.yaml, jeśli leży obok niego.
+
+## Zadania
+
+1. docker compose ps
+
+db - działa i jest healthy
+web - działa
+api - wpada w pętle restartów
+
+2. docker compose logs api
+Baza danych: postgresql+psycopg2://linkbox:***@localhost:5432/linkbox - teraz
+postgresql+psycopg2://linkbox:***@db:5432/linkbox - poprzednio było 
+
+Api próbuje łączyć się z localhost a w kontenerze localhost onaczam sam kontener API, a nie kontener Postgresa.
+
+3. nano compose.yaml - jest ok
+nano compose.override.yaml - tu jest błąd
+zmieniam @localhost:5432 na @db:5432
+
+4. Był jeszcze jeden problem. 
+
+DATABASE_URL: "postgresql+psycopg2://linkbox:nieaktualne-haslo@db:5432/linkbox"
+
+poprawiłem linkbox:${POSTGRES_PASSWORD}
+
+Wszystko teraz działa.
+
+## Notatka końcowa
+
+1. Objaw: 
+docker compose ps pokazywał, że db był healthy, web działał, a api cały czas wpadał w Restarting (1). W logach API najpierw pojawiał się błąd Connection refused dla localhost:5432
+
+2. Znalazłem 2 błedy:
+
+- Wada 1: 
+Błąd Connection refused wynikał z użycia localhost zamiast db w compose.override.yaml. Po zmianie hosta błąd zmienił się na password authentication failed, więc API zaczęło docierać do PostgreSQL
+
+- Wada 2: 
+Błąd password authentication failed wynikał z wpisanego na stałe nieaktualne-haslo w compose.override.yaml. Po zamianie na ${POSTGRES_PASSWORD} API uruchomiło się poprawnie
+
+3. Weryfikacja: 
+
+Sprawdziłem /health, liczbę rekordów w links i front. Po naprawie wszędzie powinny być 4 linki.
+
+4. Trudniejsza była druga wada, bo poprawił hosta i połącznie dochodziło do PostgreSQL a nie spojrzałem wcześniej na hasło z kąd go pobiera i trche szukałem po logach wiecej informacji. 
+
+
+### Trzy pytania
+
+1. Dlaczego zmiana POSTGRES_PASSWORD w .env nie zmienia automatycznie hasła w już istniejącej bazie?
+2. Dlaczego db może być w statusie healthy a api mimo to nie działa. 
+3. Dlaczego kontener przy statusie Restarting (1) restartował się cały czas, a nie tylko jeden raz?
+
+

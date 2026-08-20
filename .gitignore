@@ -18,3 +18,4 @@ __pycache__/
 *.db
 .env
 kopie/
+aplikacja/compose.override.yaml
