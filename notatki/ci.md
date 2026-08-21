@@ -355,4 +355,51 @@ jobs:
 
 4. Maszyna GitHub Actions jest tymczasowym, świeżym runnerem Ubuntu i nie ma mojej konfiguracji VM, moich lokalnych plików spoza repozytorium ani wcześniej zainstalowanych przeze mnie programów i zależności.
 
+### Z4
+
+## Notatka startowa
+
+Sekrety w GitHub Actions to poufne wartości, np. hasła, tokeny API, klucze dostępu albo dane logowania do bazy.
+
+Ustawiasz je w repozytorium na GitHubie w:
+Settings → Secrets and variables → Actions → New repository secret
+
+Potem w workflow używasz ich tak:
+env:
+  DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+
+Nie potrzebujesz sekretów, jeśli workflow tylko pobiera publiczny kod, instaluje zależności i uruchamia testy/lintery bez żadnych prywatnych danych.
+
+Testy na bazie w pamięci tworzą sobie tymczasową bazę podczas uruchomienia, więc nie potrzebują osobnego Postgresa, hasła ani DATABASE_URL.
+Zaleta: są szybkie, proste i niezależne od środowiska.
+Cena: nie sprawdzą, czy aplikacja naprawdę potrafi połączyć się z PostgreSQL, czy konfiguracja bazy jest poprawna ani czy występują różnice między bazą testową a prawdziwą bazą.
+
+## Zadnia
+
+1. Przewidywania:
+- czy CI ma dostęp do twojego pliku .env
+Odp.: CI nie ma dostępu do mojego lokalnego pliku .env, bo ten plik nie jest w repozytorium.
+- czy testy w CI łączą się z twoją bazą Postgresa,
+Odp.: Testy w CI nie łączą się z moim PostgreSQL, tylko używają własnej bazy testowej.
+- co się stanie, jeśli usuniesz requirements.txt z repozytorium i wypchniesz.
+Odp.: Gdybym usunął requirements.txt i zrobił push, workflow wywaliłby się przy instalacji zależności, bo pliku nie byłoby w repozytorium.
+
+2. Run pip install -r aplikacja/api/requirements.txt
+Successfully installed
+
+3. IN_MEMORY_DATABASE_URL = "sqlite://"
+
+4. Wywalił by się na kroku Instalacja zależności czyli przy poleceniu pip install -r aplikacja/api/requirements.txt
+w logu pojawiło by sie:
+
+ERROR: Could not open requirements file:
+[Errno 2] No such file or directory: 'aplikacja/api/requirements.txt'
+
+## Notatka końcowa
+
+1. Przewidywałem, że CI nie ma dostępu do mojego lokalnego pliku .env — potwierdziło się. Przewidywałem, że testy w CI nie łączą się z PostgreSQL, tylko używają bazy testowej — potwierdziło się. Przewidywałem, że bez requirements.txt pipeline wywaliłby się na kroku instalacji zależności z błędem braku pliku — to wynika bezpośrednio z polecenia pip install -r aplikacja/api/requirements.txt.
+2. IN_MEMORY_DATABASE_URL = "sqlite://"
+3. Pipeline sprawdza pytest, ruff i black. Nie sprawdza prawdziwego Postgresa, .env ani działania całego systemu w Docker Compose.
+
+
 
