@@ -63,4 +63,190 @@ Po komendzie echp $? = 1.
 
 3. Program wywołujący te narzędzia wie, czy sprawdzenie się powiodło, po kodzie wyjścia procesu: 0 oznacza sukces, a wartość różna od 0 oznacza błąd.
 
+### Z2 
+
+## Notatka startowa
+
+et -Eeuo pipefail (włącza w Bashu kilka zasad, które sprawiają, że skrypt szybciej ujawnia błędy zamist lecieć dalej:
+- -E (błędy z ERR są dziedziczone
+- -e (przerwie po błędzie)
+- -u (błąd przy niezdefiniowanej zmiennej)
+- pipedail (wykryj błąd w całym potoku, nie tylko końcu)
+
+Można zrobić licznik błędów i nie używać set -e do tych sprawdzeń, przykład: 
+
+!/usr/bin/env bash
+
+errors=0
+
+python -m pytest || ((errors++))
+python -m ruff check . || ((errors++))
+python -m black --check . || ((errors++))
+
+if (( errors > 0 )); then
+    echo "Nieudane sprawdzenia: $errors"
+    exit 1
+fi
+
+echo "Wszystkie sprawdzenia przeszły"
+exit 0
+
+Jak w skrypcie bash sprawdzić, czy jestem w katalogu, którego się spodziewam, i jak sprawić, żeby skrypt działał niezależnie od tego, z którego katalogu go uruchomiono?
+Odp.:
+
+!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+albo jeśli dodatkowo chce sprawdzać czy jestem w oczekiwanym katalogu:
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if [[ ! -f "pyproject.toml" ]]; then
+    echo "Błąd: zły katalog"
+    exit 1
+fi
+
+## Zadania
+
+1.   GNU nano 8.7.1                                            sprawdz.sh
+!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+API_DIR="$ROOT_DIR/aplikacja/api"
+
+cd "$API_DIR"
+
+errors=0
+
+echo "Test pytest: "
+if python -m pytest; then
+        echo "Ok: pytest"
+else
+        echo "Zle: pytest"
+        ((errors+=1))
+fi
+
+echo
+echo "Test ruff: "
+if python -m ruff check .; then
+    echo "OK: ruff"
+else
+    echo "Zle: ruff"
+    ((errors+=1))
+fi
+
+echo
+echo "Test black: "
+if python -m black --check .; then
+    echo "OK: black"
+else
+    echo "Zle: black"
+    ((errors+=1))
+fi
+
+echo
+
+if (( errors > 0 )); then
+        echo "Nieudane sprawdzenie: $errors"
+        exit 1
+fi
+
+echo "Wszystkie sprawdzenia poszły"
+exit 0
+
+2. chmod +x sprawdz.sh
+
+3. (.venv) bartek@ubuntu:~/staz$ ./sprawdz.sh
+Test pytest:
+................................................                                                                    [100%]
+==================================================== warnings summary =====================================================
+.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /home/bartek/staz/aplikacja/api/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+48 passed, 1 warning in 1.19s
+Ok: pytest
+
+Test ruff:
+All checks passed!
+OK: ruff
+
+Test black:
+All done! ✨ 🍰 ✨
+24 files would be left unchanged.
+OK: black
+
+Wszystkie sprawdzenia poszły
+(.venv) bartek@ubuntu:~/staz$ echo $?
+0
+
+Na lokalizaci /tmp też działa. Po zrobieniu specjalnie błędów znalazło te błędy i wszystko działa tak jak powinno. 
+
+4. sudo apt install shellcheck (bo nie było go)
+
+shellcheck sprawdz.sh (nic nie wyświetlił czyli nie ma problemu)
+
+## Notatka końcowa
+
+1. Skrypt: 
+
+!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+API_DIR="$ROOT_DIR/aplikacja/api"
+
+cd "$API_DIR"
+
+errors=0
+
+echo "Test pytest:"
+if python -m pytest; then
+    echo "OK: pytest"
+else
+    echo "Zle: pytest"
+    ((errors+=1))
+fi
+
+echo
+echo "Test ruff:"
+if python -m ruff check .; then
+    echo "OK: ruff"
+else
+    echo "Zle: ruff"
+    ((errors+=1))
+fi
+
+echo
+echo "Test black:"
+if python -m black --check .; then
+    echo "OK: black"
+else
+    echo "Zle: black"
+    ((errors+=1))
+fi
+
+echo
+
+if (( errors > 0 )); then
+    echo "Nieudane sprawdzenia: $errors"
+    exit 1
+fi
+
+echo "Wszystkie sprawdzenia poszly"
+exit 0
+
+2. Kody wejścia: 
+- zielony przebieg: 0
+- czerwony przebieg: 1
+
+3. Skrypt wykonuje wszystkie trzy sprawdzenia, a nie zatrzymuje się na pierwszym błędzie, bo zlicza błędy i dopiero na końcu zwraca kod 1.
+
+4. ShellCheck nie zgłosił żadnych błędów ani ostrzeżeń
+
 
