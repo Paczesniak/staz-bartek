@@ -471,3 +471,150 @@ Lokalnie znalezienie problemu zajęło mi kilka sekund, natomiast każda próba 
 
 5. Bez lokalnego skryptu każdą poprawkę musiałby commitować, pushować i czekać na CI, co znacznie wydłuzyłoby diagnozowanie błędów. 
 
+### Z6 
+
+## Notatka startowa
+
+Drugi job definiujemy obok pierwszego pod job: 
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Testy"
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Build"
+
+Jeśli nie dodasz needs: GitHub domyślnie może uruchomić joby rónolegle. 
+
+Ubuntu-latest ma Dockera, a obraz budujesz przez docker build z odpowiednim katalogiem.
+
+Smoke test to szybki test typu: „czy aplikacja w ogóle wstała i odpowiada?”
+- test jednostkowy — sprawdza mały fragment kodu, np. jedną funkcję,
+- smoke test — sprawdza, czy uruchomiona aplikacja działa na podstawowym poziomie,
+- end-to-end — sprawdza cały przepływ od początku do końca, np. wysłanie żądania, zapis do bazy i odpowiedź.
+
+## Zadania
+
+1. ci.yml (dodałem taki kod)
+
+
+  smoke:
+    needs: check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobranie kodu
+        uses: actions/checkout@v4
+
+      - name: Zbudowanie obrazu
+        run: docker build -t linkbox-api ./aplikacja/api
+
+      - name: Smoke test
+        run: |
+          set -Eeuo pipefail
+
+          docker run -d \
+            --name linkbox-smoke \
+            -p 8000:8000 \
+            -e APP_HOST=0.0.0.0 \
+            linkbox-api
+
+          trap 'docker rm -f linkbox-smoke >/dev/null 2>&1 || true' EXIT
+
+          for i in {1..30}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/health || true)
+
+            if [ "$status" = "200" ]; then
+              echo "OK: /health zwrocil 200"
+              exit 0
+            fi
+
+            echo "Proba $i: aplikacja jeszcze nie odpowiada"
+            sleep 1
+          done
+
+          echo "BLAD: /health nie zwrocil 200"
+          docker logs linkbox-smoke
+          exit 1
+
+Wytłumaczenie kodu: 
+- smoke:
+  needs: check (dodałem drugi job smoke, który uruchamia się dopiero po udanym check)
+- runs-on: ubuntu-latest (uruchamia go na świeżej maszynie Ubuntu)
+- uses: actions/checkout@v4 (pobiera kod repozytorium na tę drugą maszynę)
+- run: docker build -t linkbox-api ./aplikacja/api (buduje obraz Dockera z aplikacja/api i nadaje mu nazwę linkbox-api)
+- docker run -d \
+  --name linkbox-smoke \
+  -p 8000:8000 \
+  -e APP_HOST=0.0.0.0 \
+  linkbox-api (uruchamia kontener w tle, na porcie 8000 i ustawia aplikację tak żeby była dostępna spoza kontenera)
+- trap 'docker rm -f linkbox-smoke >/dev/null 2>&1 || true' EXIT (na końcu zawsze zatrzymuje i usuwa kontener)
+- for i in {1..30}; do (maksymalnie 30 razy sprawdza /health co sekundę)
+- status=$(curl ...) (pobiera kod http z /health)
+- if [ "$status" = "200" ]; then (jeśli dostanie 200 smoke test przeszedł)
+- docker logs linkbox-smoke
+exit 1 (pokazuje logi kontenera i kończy job błędem)
+
+2. -e APP_HOST=0.0.0.0 - to właśnie rozwiązuje problem dzieki temu aplikacja nie nasłuchuju na 127.0.0.1 lecz na wszystkich interfasach.
+
+3. Zastosowałem się do tego
+
+4. cd ~/staz
+git add .github/workflows/ci.yml
+git commit -m "Dodanie smoke testu do CI"
+git push
+
+## Notaka końcowa 
+
+1. ci.yaml
+
+smoke:
+  needs: check
+  runs-on: ubuntu-latest
+
+  steps:
+    - name: Pobranie kodu
+      uses: actions/checkout@v4
+
+    - name: Zbudowanie obrazu
+      run: docker build -t linkbox-api ./aplikacja/api
+
+    - name: Smoke test
+      run: |
+        set -Eeuo pipefail
+
+        docker run -d \
+          --name linkbox-smoke \
+          -p 8000:8000 \
+          -e APP_HOST=0.0.0.0 \
+          -e DATABASE_URL=sqlite:////tmp/links.db \
+          linkbox-api
+
+        trap 'docker rm -f linkbox-smoke >/dev/null 2>&1 || true' EXIT
+
+        for i in {1..30}; do
+          status=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/health || true)
+
+          if [ "$status" = "200" ]; then
+            echo "OK: /health zwrocil 200"
+            exit 0
+          fi
+
+          sleep 1
+        done
+
+        docker logs linkbox-smoke
+        exit 1
+
+2. Pętla jest lepsza niż sleep 30, bo kończy czekanie od razu po uruchomieniu aplikacji i jednocześnie daje jej do 30 prób, więc jest bardziej niezawodna przy różnym czasie startu.
+ 
+3. Smoke test wyłapie np. sytuację, gdy obraz się buduje, ale aplikacja w kontenerze nie startuje przez błędną ścieżkę do bazy SQLite — czego testy jednostkowe nie sprawdzają.
+
+4. needs: check jest dlatego, że nie ma sensu budować i uruchamiać kontenera, jeśli testy i kontrola kodu już wcześniej wykazały błąd.
+
+ 
