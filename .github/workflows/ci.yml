@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobranie kodu
+        uses: actions/checkout@v4
+
+      - name: Ustawienie Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Instalacja zależności
+        run: pip install -r aplikacja/api/requirements.txt
+
+      - name: Uruchomienie sprawdzen
+        run: ./sprawdz.sh
