@@ -41,6 +41,7 @@ jobs:
             --name linkbox-smoke \
             -p 8000:8000 \
             -e APP_HOST=0.0.0.0 \
+            -e DATABASE_URL=sqlite:////tmp/links.db \
             linkbox-api
 
           trap 'docker rm -f linkbox-smoke >/dev/null 2>&1 || true' EXIT
