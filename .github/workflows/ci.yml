@@ -21,3 +21,42 @@ jobs:
 
       - name: Uruchomienie sprawdzen
         run: ./sprawdz.sh
+
+  smoke:
+    needs: check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobranie kodu
+        uses: actions/checkout@v4
+
+      - name: Zbudowanie obrazu
+        run: docker build -t linkbox-api ./aplikacja/api
+
+      - name: Smoke test
+        run: |
+          set -Eeuo pipefail
+
+          docker run -d \
+            --name linkbox-smoke \
+            -p 8000:8000 \
+            -e APP_HOST=0.0.0.0 \
+            linkbox-api
+
+          trap 'docker rm -f linkbox-smoke >/dev/null 2>&1 || true' EXIT
+
+          for i in {1..30}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/health || true)
+
+            if [ "$status" = "200" ]; then
+              echo "OK: /health zwrocil 200"
+              exit 0
+            fi
+
+            echo "Proba $i: aplikacja jeszcze nie odpowiada"
+            sleep 1
+          done
+
+          echo "BLAD: /health nie zwrocil 200"
+          docker logs linkbox-smoke
+          exit 1
