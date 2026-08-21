@@ -26,7 +26,7 @@ CODE_PATTERN = re.compile(rf"^[A-Za-z0-9_-]{{{CODE_MIN_LENGTH},{CODE_MAX_LENGTH}
 # Alfabet losowanych kodów — bez znaków, które łatwo pomylić przy przepisywaniu
 # (0/O, 1/l/I). Skracacz linków ma być czytelny, gdy ktoś przepisuje kod z ekranu.
 CODE_ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-GENERATED_CODE_LENGTH = 3
+GENERATED_CODE_LENGTH = 7
 
 
 class ValidationError(Exception):
@@ -84,8 +84,3 @@ def generate_code() -> str:
     Kolizję (kod już zajęty) obsługuje warstwa zapisu, ponawiając losowanie.
     """
     return "".join(secrets.choice(CODE_ALPHABET) for _ in range(GENERATED_CODE_LENGTH))
-
-
-def opis_kodu(code: str, prefiks: str = "link") -> str:
-    """Zwraca krótki opis kodu do logów."""
-    return f"{prefiks}:{code}" if code else f"{prefiks}:(brak)"

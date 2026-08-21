@@ -401,5 +401,73 @@ ERROR: Could not open requirements file:
 2. IN_MEMORY_DATABASE_URL = "sqlite://"
 3. Pipeline sprawdza pytest, ruff i black. Nie sprawdza prawdziwego Postgresa, .env ani działania całego systemu w Docker Compose.
 
+### Z5
 
+## Notatka startowa
+
+Czytaj log od góry i szukaj pierwszego konkretnego błędu, nie tylko ostatniej czerwonej linijki.
+pierwszy konkretny błąd → przyczyna
+ostatnie linie → najczęściej tylko skutek
+
+Naprawienie błędu oznacza, że zmieniasz kod tak, żeby problem faktycznie zniknął.
+Wyciszenie, np.:
+import os  # noqa: F401
+oznacza: wiem, że linter widzi problem, ale chcę, żeby go tutaj zignorował.
+
+## Zadania
+
+1. pytest (AssertionError: assert 2 >= 3)
+ruff (F401 `json` imported but unused) - w app/validation.py jest import json
+black (would reformat app/validation.py) - ma też niepoprawne formatowanie
+
+2. 3 poprawki w app/validation.py 
+- GENERATED_CODE_LENGTH = 2 na 3
+- Usunąłem import json
+- i formatowanie def opis kodu (brakowało spacji i była podwójna spacja)
+
+3. (.venv) bartek@ubuntu:~/staz$ ./sprawdz.sh
+Test pytest:
+................................................                                                                    [100%]
+==================================================== warnings summary =====================================================
+.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /home/bartek/staz/aplikacja/api/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+48 passed, 1 warning in 2.23s
+Ok: pytest
+
+Test ruff:
+All checks passed!
+OK: ruff
+
+Test black:
+All done! ✨ 🍰 ✨
+24 files would be left unchanged.
+OK: black
+
+Wszystkie sprawdzenia poszły
+
+4. git status
+git add
+git commit -m
+git push
+
+5. Ci trwało 21s. 
+Lokalnie znalezienie problemu zajęło mi kilka sekund, natomiast każda próba przez CI wymagałaby dodatkowo około 21 sekund oczekiwania na przebieg, plus czas na commit i push. Lokalny skrypt pozwala więc dużo szybciej poprawiać błędy przed wysłaniem zmian.
+
+## Notatka końcowa
+
+1. Objaw: 
+- pytest: AssertionError: assert 2 >= 3
+- ruff: F401 json imported but unused
+- black: would reformat app/validation.py
+
+2. Przyczyna: Długość generowanego kodu była ustawiona na 2, dodano nieużywany import json i popsuto formatowanie funkcji opis_kodu.
+
+3. Naprawa: Zmieniłem długośc kodu na 3, usunąłem import json i poprawiłem formatowanie.
+
+4. Weryfikacja: Lokalnie 48 passed, Ruff i Black OK, kod wyjścia 0.
+
+5. Bez lokalnego skryptu każdą poprawkę musiałby commitować, pushować i czekać na CI, co znacznie wydłuzyłoby diagnozowanie błędów. 
 
