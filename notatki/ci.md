@@ -249,4 +249,110 @@ exit 0
 
 4. ShellCheck nie zgłosił żadnych błędów ani ostrzeżeń
 
+### Z3
+
+## Notatka startowa
+
+1. Plik workflow GitHub Actions to plik YAML, który mówi GitHubowi kiedy coś uruchomić i co dokładnie ma zrobić.
+2. actions/checkout (pobiera kod Twojego repozytorium na maszynę GitHub Actions. Bez tego runner nie będzie miał Twoich plików, więc np. pytest nie znajdzie projektu)
+actions/setup-python (instaluje/ustawia wybraną wersję Pythona na runnerze)
+3. Job kończy się niepowodzeniem, gdy któryś wymagany krok zwróci kod wyjścia różny od 0.
+
+## Zadania
+
+1. Repozytorium:
+
+name: CI
+
+on:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobranie kodu
+        uses: actions/checkout@v4
+
+      - name: Ustawienie Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Instalacja zależności
+        run: pip install -r aplikacja/api/requirements.txt
+
+      - name: Uruchomienie sprawdzen
+        run: ./sprawdz.sh
+
+Wytłumaczenie: 
+- name: CI (nazwa wordkflow)
+- on: push: (kiedy ma sie uruchomić)
+- jobs: (lista zadań)
+- check: (sprawdzenie projektu)
+- runs-on: ununtu-latest (uruchamienie świeżej maszyny z najnowszym ubuntu)
+- steps: (kroki zadań i kolejność)
+- name: Pobranie kodu
+        uses: actions/checkout@v4 
+(pobiera repo na maszyne GitHub)
+- name: Ustawienie Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+(przygotowywuje pythona w wersji 3.14)
+- name: Instalacja zależności
+        run: pip install -r aplikacja/api/requirements.txt
+(wykonuje komende terminalowa i instaluje biblioteki potrzebne do aplikacji)
+- name: Uruchomienie sprawdzen
+        run: ./sprawdz.sh
+(uruchamia skrypt sprawdz.sh który odpala pytest, ruff, black)
+
+2. git add .github/workflows/ci.yml sprawdz.sh
+git commit -m "Dodanie CI GitHub Actions"
+git push
+
+3. Jest na github
+
+4. Cały przebieg trwał 26 sekund.
+Job check trwał 22 sekundy.
+Workflow zakończył się statusem Success.
+Potrzebne było 1 podejście.
+Nie było błędu powodującego zatrzymanie workflow.
+GitHub pokazał tylko ostrzeżenie o tym, że Node.js 20 jest deprecated dla jednej z użytych akcji, ale nie wpłynęło to na wynik.
+
+## Notatka końcowa
+
+1. Plik ci.yml
+
+name: CI
+
+on:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobranie kodu
+        uses: actions/checkout@v4
+
+      - name: Ustawienie Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Instalacja zależności
+        run: pip install -r aplikacja/api/requirements.txt
+
+      - name: Uruchomienie sprawdzen
+        run: ./sprawdz.sh
+
+2. Czas przebiegu: 26 sekund. Job check: 22 sekundy. Najdłuższy krok wpisz zgodnie z widokiem po rozwinięciu joba check — na pokazanym screenie nie widać czasów poszczególnych kroków.
+
+3. Czerwonych przebiegów nie było — pipeline przeszedł poprawnie za pierwszym podejściem.
+
+4. Maszyna GitHub Actions jest tymczasowym, świeżym runnerem Ubuntu i nie ma mojej konfiguracji VM, moich lokalnych plików spoza repozytorium ani wcześniej zainstalowanych przeze mnie programów i zależności.
+
 
